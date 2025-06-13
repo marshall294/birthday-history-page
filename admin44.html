@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Admin - Birthday Manager</title>
+  <style>
+    body { font-family: Arial, sans-serif; background: #f2f2f2; padding: 20px; }
+    h1, h2 { color: #333; }
+    .card {
+      background: #fff; padding: 20px; margin-bottom: 30px;
+      border-radius: 10px; box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    }
+    input, textarea, button {
+      display: block; width: 100%; padding: 10px; margin: 10px 0;
+      border: 1px solid #ccc; border-radius: 6px;
+    }
+    button { background: #007bff; color: white; font-weight: bold; cursor: pointer; }
+    button.delete { background: #dc3545; }
+    button.cancel-edit { background: #6c757d; }
+    img.profile { height: 60px; width: 60px; object-fit: cover; border-radius: 50%; }
+    .gallery img { height: 80px; margin: 5px; border-radius: 6px; }
+    .year-heading { background: #e9ecef; padding: 10px; border-radius: 6px; margin-top: 30px; }
+  </style>
+</head>
+<body>
+
+  <h1>🎂 Admin Panel – Birthday Page Manager</h1>
+
+  <div class="card">
+    <h2 id="formTitle">Create Birthday Page</h2>
+    <form id="birthdayForm">
+      <input type="text" id="celebrantName" placeholder="Celebrant Name" required />
+      <input type="date" id="birthdate" required />
+      <textarea id="birthdayQuote" placeholder="Birthday Quote or Prayer"></textarea>
+      <input type="text" id="partyVenue" placeholder="Party Venue (Optional)" />
+
+      <label>Profile Image:</label>
+      <input type="file" id="profileImage" accept="image/*" />
+
+      <label>Gallery Images:</label>
+      <input type="file" id="galleryImages" accept="image/*" multiple />
+
+      <input type="hidden" id="editingId" value="">
+      <button type="submit">Save</button>
+      <button type="button" class="cancel-edit" onclick="cancelEdit()" style="display:none">Cancel Edit</button>
+    </form>
+  </div>
+
+  <div class="card">
+    <h2>Birthday Pages by Year</h2>
+    <div id="pagesContainer"></div>
+  </div>
+
+  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-firestore-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-storage-compat.js"></script>
+
+  <script>
+    const firebaseConfig = {
+      apiKey: "AIzaSyATPcqBcNmcQkIz6DVpRQ7Aq98yHJt7dDY",
+      authDomain: "live-score-57927.firebaseapp.com",
+      projectId: "live-score-57927",
+      storageBucket: "live-score-57927.appspot.com",
+      messagingSenderId: "127539049395",
+      appId: "1:127539049395:web:69ae352cfcd8a42cc651c6"
+    };
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.firestore();
+    const storage = firebase.storage();
+
+    const form = document.getElementById("birthdayForm");
+    const pagesContainer = document.getElementById("pagesContainer");
+    const editingIdInput = document.getElementById("editingId");
+    const formTitle = document.getElementById("formTitle");
+    const cancelEditBtn = document.querySelector(".cancel-edit");
+
+    async function uploadFile(file, path) {
+      const ref = storage.ref().child(path);
+      await ref.put(file);
+      return await ref.getDownloadURL();
+    }
+
+    form.addEventListener("submit", async (e) => {
+      e.preventDefault();
+
+      const id = editingIdInput.value || db.collection("birthdayPages").doc().id;
+      const docRef = db.collection("birthdayPages").doc(id);
+
+      const name = document.getElementById("celebrantName").value;
+      const birthdate = document.getElementById("birthdate").value;
+      const quote = document.getElementById("birthdayQuote").value;
+      const venue = document.getElementById("partyVenue").value;
+      const profileFile = document.getElementById("profileImage").files[0];
+      const galleryFiles = document.getElementById("galleryImages").files;
+
+      let profileURL = "";
+      if (profileFile) {
+        profileURL = await uploadFile(profileFile, `birthdays/${id}/profile.jpg`);
+      }
+
+      const gallery = [];
+      for (let i = 0; i < galleryFiles.length; i++) {
+        const url = await uploadFile(galleryFiles[i], `birthdays/${id}/gallery-${Date.now()}-${i}.jpg`);
+        gallery.push(url);
+      }
+
+      await docRef.set({
+        name, birthdate, quote, venue, profileURL, gallery, updatedAt: new Date()
+      }, { merge: true });
+
+      alert(editingIdInput.value ? "Page updated!" : "Page created!");
+      form.reset();
+      cancelEdit();
+      loadPages();
+    });
+
+    function cancelEdit() {
+      formTitle.textContent = "Create Birthday Page";
+      editingIdInput.value = "";
+      cancelEditBtn.style.display = "none";
+    }
+
+    async function loadPages() {
+      pagesContainer.innerHTML = "";
+      const snapshot = await db.collection("birthdayPages").orderBy("birthdate").get();
+      const pagesByYear = {};
+
+      snapshot.forEach(doc => {
+        const data = doc.data();
+        const birthdate = new Date(data.birthdate);
+        const year = birthdate.getFullYear();
+        if (!pagesByYear[year]) pagesByYear[year] = [];
+        pagesByYear[year].push({ id: doc.id, data });
+      });
+
+      Object.keys(pagesByYear).sort((a, b) => b - a).forEach(year => {
+        const section = document.createElement("div");
+        section.innerHTML = `<div class="year-heading"><strong>${year}</strong></div>`;
+        pagesByYear[year].forEach(entry => {
+          const data = entry.data;
+          const div = document.createElement("div");
+          div.className = "card";
+          div.innerHTML = `
+            <strong>${data.name} (${data.birthdate})</strong><br/>
+            ${data.profileURL ? `<img src="${data.profileURL}" class="profile"/>` : ""}
+            <p><em>${data.quote || "No quote provided."}</em></p>
+            <p><strong>Venue:</strong> ${data.venue || "N/A"}</p>
+            <div class="gallery">
+              ${(data.gallery || []).map(url => `<img src="${url}" />`).join("")}
+            </div>
+            <button onclick="editPage('${entry.id}')">Edit</button>
+            <button class="delete" onclick="deletePage('${entry.id}')">Delete</button>
+          `;
+          section.appendChild(div);
+        });
+        pagesContainer.appendChild(section);
+      });
+    }
+
+    async function deletePage(id) {
+      if (confirm("Delete this birthday page?")) {
+        await db.collection("birthdayPages").doc(id).delete();
+        loadPages();
+      }
+    }
+
+    async function editPage(id) {
+      const doc = await db.collection("birthdayPages").doc(id).get();
+      if (!doc.exists) return;
+      const data = doc.data();
+
+      formTitle.textContent = "Edit Birthday Page";
+      editingIdInput.value = id;
+      cancelEditBtn.style.display = "inline-block";
+      document.getElementById("celebrantName").value = data.name;
+      document.getElementById("birthdate").value = data.birthdate;
+      document.getElementById("birthdayQuote").value = data.quote;
+      document.getElementById("partyVenue").value = data.venue;
+    }
+
+    loadPages();
+  </script>
+</body>
+</html>
