@@ -1,0 +1,296 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>🎉 Birthday Celebration</title>
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@500;700&family=Roboto:wght@400;500&display=swap" rel="stylesheet">
+  <style>
+    body {
+      font-family: 'Playfair Display', serif;
+      margin: 0;
+      background: linear-gradient(to right, #f9f7f7, #dbe2ef);
+      padding: 20px;
+      overflow-x: hidden;
+    }
+    header {
+      text-align: center;
+      margin-bottom: 30px;
+      animation: fadeInDown 1s ease-out;
+    }
+    @keyframes fadeInDown {
+      from { opacity: 0; transform: translateY(-20px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    .dropdown {
+      display: flex;
+      justify-content: center;
+      margin-bottom: 20px;
+      animation: fadeIn 1s ease-in-out;
+    }
+    select {
+      padding: 10px;
+      font-size: 1rem;
+      border-radius: 6px;
+      border: 1px solid #ccc;
+    }
+    .year-section {
+      display: none;
+    }
+    .year-section.active {
+      display: block;
+      animation: fadeIn 0.7s ease-in-out;
+    }
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(10px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    .card {
+      background: white;
+      border-radius: 12px;
+      padding: 20px;
+      margin-bottom: 20px;
+      box-shadow: 0 5px 12px rgba(0,0,0,0.1);
+      text-align: center;
+      position: relative;
+      animation: fadeInUp 0.7s ease-in-out;
+    }
+    @keyframes fadeInUp {
+      from { opacity: 0; transform: translateY(20px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    .portrait-frame {
+      width: 80vw;
+      max-width: 400px;
+      height: auto;
+      margin: 0 auto 15px;
+      border: 6px solid #c0a062;
+      padding: 6px;
+      background: #fff;
+      border-radius: 16px;
+      box-shadow: inset 0 0 12px rgba(0,0,0,0.2);
+    }
+    .portrait-frame img {
+      width: 100%;
+      height: auto;
+      object-fit: cover;
+      border-radius: 10px;
+    }
+    .quote-box {
+      background: #fce8d5;
+      padding: 15px;
+      margin: 15px auto;
+      border-left: 6px solid #f4a261;
+      max-width: 500px;
+      border-radius: 8px;
+      font-style: italic;
+      animation: fadeIn 1s ease-in-out;
+    }
+    .gallery {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: 12px;
+      margin-top: 15px;
+      animation: fadeIn 1s ease-in-out;
+    }
+    .gallery img {
+      width: 80vw;
+      max-width: 300px;
+      border-radius: 10px;
+      transition: transform 0.3s ease, box-shadow 0.3s ease;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.15);
+    }
+    .gallery img:hover {
+      transform: scale(1.05);
+      box-shadow: 0 4px 12px rgba(0,0,0,0.25);
+    }
+    .countdown {
+      color: #2a9d8f;
+      font-weight: bold;
+      animation: fadeIn 0.7s ease;
+    }
+    .wish {
+      background: #e9f5db;
+      padding: 10px;
+      border-radius: 8px;
+      margin: 5px auto;
+      max-width: 400px;
+      animation: fadeIn 0.5s ease;
+    }
+    .wish-form {
+      margin-top: 15px;
+      max-width: 400px;
+      margin-left: auto;
+      margin-right: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      animation: fadeInUp 0.7s ease-in-out;
+    }
+    .wish-form input,
+    .wish-form textarea,
+    .wish-form button {
+      padding: 10px;
+      font-size: 1rem;
+      border-radius: 6px;
+      border: 1px solid #ccc;
+    }
+    .wish-form button {
+      background-color: #2a9d8f;
+      color: white;
+      border: none;
+      cursor: pointer;
+      transition: background 0.3s;
+    }
+    .wish-form button:hover {
+      background-color: #21867a;
+    }
+    .toggle-btn {
+      background: none;
+      border: none;
+      color: #1d3557;
+      text-decoration: underline;
+      cursor: pointer;
+      margin-top: 10px;
+      animation: fadeIn 0.7s ease;
+    }
+    audio {
+      display: none;
+    }
+  </style>
+</head>
+<body>
+  <audio autoplay loop>
+    <source src="26iRPhgfoH.mp3" type="audio/mpeg">
+  </audio>
+
+  <header>
+    <h1>🎂 Birthday Celebration Page</h1>
+    <p>Select a year to view birthday highlights!</p>
+  </header>
+
+  <div class="dropdown">
+    <select id="yearSelect" onchange="changeYear(this.value)"></select>
+  </div>
+
+  <div id="yearSections"></div>
+
+  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-firestore-compat.js"></script>
+  <script>
+    const firebaseConfig = {
+      apiKey: "AIzaSyATPcqBcNmcQkIz6DVpRQ7Aq98yHJt7dDY",
+      authDomain: "live-score-57927.firebaseapp.com",
+      projectId: "live-score-57927",
+      storageBucket: "live-score-57927.appspot.com",
+      messagingSenderId: "127539049395",
+      appId: "1:127539049395:web:69ae352cfcd8a42cc651c6"
+    };
+    firebase.initializeApp(firebaseConfig);
+    const db = firebase.firestore();
+
+    function changeYear(year) {
+      document.querySelectorAll('.year-section').forEach(section => section.classList.remove('active'));
+      const section = document.getElementById(`year-${year}`);
+      if (section) section.classList.add('active');
+    }
+
+    function renderCard(data, daysToGo, docId) {
+      const bd = data.birthdate.toDate ? data.birthdate.toDate() : new Date(data.birthdate);
+      const wishes = data.wishes || [];
+      const limitedWishes = wishes.slice(-10);
+
+      const card = document.createElement('div');
+      card.className = 'card';
+      card.innerHTML = `
+        <div class="portrait-frame">
+          ${data.profileURL ? `<img src="${data.profileURL}" alt="profile" />` : ''}
+        </div>
+        <h2>${data.name} (${bd.toLocaleDateString()})</h2>
+        ${data.venue ? `<p><strong>Venue:</strong> ${data.venue}</p>` : ''}
+        <div class="quote-box">${data.quote || '–'}</div>
+        <div class="gallery">
+          ${(data.gallery || []).map(url => `<img src="${url}" alt="gallery" />`).join('')}
+        </div>
+        ${typeof daysToGo === 'number' ? `<p class="countdown">🎉 ${daysToGo} day(s) to go!</p>` : ''}
+        <h3>🎈 Wishes:</h3>
+        <div class="wish-list" id="wish-list-${docId}">
+          ${limitedWishes.map(w => `<div class="wish"><strong>${w.name}</strong>: ${w.message}</div>`).join('') || '<p>No wishes yet.</p>'}
+        </div>
+        ${wishes.length > 10 ? `<button class="toggle-btn" onclick="toggleAllWishes(this, ${JSON.stringify(wishes).replace(/"/g, '&quot;')})">View All Wishes</button>` : ''}
+        <form class="wish-form" onsubmit="submitWish(event, '${docId}')">
+          <input type="text" name="name" placeholder="Your name" required />
+          <textarea name="message" placeholder="Your birthday wish" required></textarea>
+          <button type="submit">Submit Wish</button>
+        </form>
+      `;
+      return card;
+    }
+
+    function toggleAllWishes(btn, wishes) {
+      const wishList = btn.previousElementSibling;
+      wishList.innerHTML = wishes.map(w => `<div class="wish"><strong>${w.name}</strong>: ${w.message}</div>`).join('');
+      btn.remove();
+    }
+
+    async function submitWish(event, docId) {
+      event.preventDefault();
+      const form = event.target;
+      const name = form.name.value.trim();
+      const message = form.message.value.trim();
+      if (!name || !message) return;
+
+      const docRef = db.collection("birthdayPages").doc(docId);
+      const wish = { name, message };
+
+      await docRef.update({
+        wishes: firebase.firestore.FieldValue.arrayUnion(wish)
+      });
+
+      const wishList = document.getElementById(`wish-list-${docId}`);
+      const newWish = document.createElement('div');
+      newWish.className = 'wish';
+      newWish.innerHTML = `<strong>${name}</strong>: ${message}`;
+      wishList.appendChild(newWish);
+      form.reset();
+    }
+
+    async function loadPages() {
+      const snapshot = await db.collection("birthdayPages").get();
+      const today = new Date();
+      const sections = {};
+      const container = document.getElementById("yearSections");
+      const years = new Set();
+
+      snapshot.forEach(doc => {
+        const data = doc.data();
+        const bd = data.birthdate.toDate ? data.birthdate.toDate() : new Date(data.birthdate);
+        const year = bd.getFullYear();
+        years.add(year);
+        if (!sections[year]) {
+          const div = document.createElement('div');
+          div.className = 'year-section';
+          div.id = `year-${year}`;
+          sections[year] = div;
+        }
+        const daysToGo = Math.ceil((new Date(today.getFullYear(), bd.getMonth(), bd.getDate()) - today) / (1000 * 60 * 60 * 24));
+        const card = renderCard(data, daysToGo, doc.id);
+        sections[year].appendChild(card);
+      });
+
+      const yearSelect = document.getElementById("yearSelect");
+      [...years].sort((a, b) => b - a).forEach((y, idx) => {
+        const opt = document.createElement("option");
+        opt.value = y;
+        opt.textContent = y;
+        yearSelect.appendChild(opt);
+        container.appendChild(sections[y]);
+        if (idx === 0) sections[y].classList.add("active");
+      });
+    }
+
+    loadPages();
+  </script>
+</body>
+</html>
